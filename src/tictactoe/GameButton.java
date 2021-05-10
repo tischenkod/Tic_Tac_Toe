@@ -1,7 +1,6 @@
 package tictactoe;
 
 import javax.swing.*;
-import java.io.IOException;
 import java.util.logging.*;
 
 public class GameButton extends JButton{
@@ -13,13 +12,7 @@ public class GameButton extends JButton{
         logger = Logger.getLogger(getClass().getName());
         logger.setUseParentHandlers(false);
         logger.setFilter(record -> false);
-        try {
-            Handler handler = new FileHandler(caption + ".log");
-            handler.setFormatter(new SimpleFormatter());
-            logger.addHandler(handler);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
         setState(CellState.CLEAR);
     }
 

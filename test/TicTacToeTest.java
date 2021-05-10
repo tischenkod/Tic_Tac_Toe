@@ -53,7 +53,11 @@ public class TicTacToeTest extends SwingTest {
     @SwingComponent
     private JButtonFixture buttonC3;
     @SwingComponent
-    private JButtonFixture buttonReset;
+    private JButtonFixture buttonStartReset;
+    @SwingComponent
+    private JButtonFixture buttonPlayer1;
+    @SwingComponent
+    private JButtonFixture buttonPlayer2;
     @SwingComponent
     private JLabelFixture labelStatus;
 
@@ -77,17 +81,17 @@ public class TicTacToeTest extends SwingTest {
                 "A3", buttonA3, "B3", buttonB3, "C3", buttonC3,
                 "A2", buttonA2, "B2", buttonB2, "C2", buttonC2,
                 "A1", buttonA1, "B1", buttonB1, "C1", buttonC1,
-                "RS", buttonReset);
+                "SR", buttonStartReset);
         return correct();
     }
 
-    @DynamicTest(feedback = "Cells should be enabled")
+    @DynamicTest(feedback = "Cells should be disabled before the start of the game")
     CheckResult test2() {
-        cells().forEach(this::requireEnabled);
+        cells().forEach(this::requireDisabled);
         return correct();
     }
 
-    @DynamicTest(feedback = "All cells should be empty before the game starts")
+    @DynamicTest(feedback = "All cells should be empty before the game")
     CheckResult test3() {
         cells().forEach(cell -> cell.requireText(EMPTY_CELL));
         return correct();
@@ -124,11 +128,11 @@ public class TicTacToeTest extends SwingTest {
         range(0, 9).forEach(index -> {
 
             assertEquals(rows[index / 3], buttons.get(index).getY(),
-                    "The button {0} should be located on the {1} row",
+                    "The button {0} should be located in the {1} row",
                     buttons.get(index).getText(), ROW_NAME[index / 3]);
 
             assertEquals(cols[index % 3], buttons.get(index).getX(),
-                    "The button {0} should be located on the {1} column",
+                    "The button {0} should be located in the {1} column",
                     buttons.get(index).getText(), COL_NAME[index % 3]);
         });
 
@@ -141,20 +145,52 @@ public class TicTacToeTest extends SwingTest {
         return correct();
     }
 
-    @DynamicTest(feedback = "The status bar should contain the following text: 'Game is not started' before the game starts")
+    @DynamicTest(feedback = "The status bar should contain the following text: 'Game is not started' before the game")
     CheckResult test7() {
         labelStatus.requireText(GAME_STATE.get("E"));
         return correct();
     }
 
-    @DynamicTest(feedback = "Add a JButton with the name of 'ButtonReset' and enable it")
+    @DynamicTest(feedback = "Add a JButton with the name of 'ButtonStartReset' and enable it")
     CheckResult test8() {
-        buttonReset.requireEnabled();
+        buttonStartReset.requireEnabled();
         return correct();
     }
 
-    @DynamicTest(feedback = "The Game")
+    @DynamicTest(feedback = "The 'ButtonStartReset' component should have the follwoing text: 'Start' after the program starts")
+    CheckResult test9() {
+        buttonStartReset.requireText("Start");
+        return correct();
+    }
+
+    @DynamicTest(feedback = "After a click, 'Start' should be changed to 'Reset'")
     CheckResult test10() {
+        buttonStartReset.click();
+        buttonStartReset.requireText("Reset");
+        return correct();
+    }
+
+    @DynamicTest(feedback = "Cells should be enabled after the game started")
+    CheckResult test12() {
+        cells().forEach(this::requireEnabled);
+        return correct();
+    }
+
+    @DynamicTest(feedback = "After the game has started, display the 'Game in progress' status")
+    CheckResult test13() {
+        labelStatus.requireText(GAME_STATE.get("P"));
+        return correct();
+    }
+
+    @DynamicTest(feedback = "Disable player buttons after the start of the game")
+    CheckResult test14() {
+        buttonPlayer1.requireDisabled();
+        buttonPlayer2.requireDisabled();
+        return correct();
+    }
+
+    @DynamicTest(feedback = "The first player should be 'X', the second — 'O'")
+    CheckResult test15() {
         buttonA1.click();
         buttonA1.requireText(MARK_X);
         buttonA3.click();
@@ -162,42 +198,55 @@ public class TicTacToeTest extends SwingTest {
         return correct();
     }
 
-    @DynamicTest(feedback = "The Reset board should clear the board")
-    CheckResult test12() {
-        buttonReset.click();
+    @DynamicTest(feedback = "Enable player buttons after the game is over or the 'Reset' button is pressed" +
+            "Enable player buttons")
+    CheckResult test16() {
+        buttonStartReset.click();
+        buttonPlayer1.requireEnabled();
+        buttonPlayer2.requireEnabled();
+        return correct();
+    }
+
+    @DynamicTest(feedback = "The 'Reset' button should clear the board" +
+            " and status should indicate 'The game is not started'")
+    CheckResult test18() {
         cells().forEach(cell -> cell.requireText(EMPTY_CELL));
         labelStatus.requireText(GAME_STATE.get("E"));
         return correct();
     }
 
     private final String[][] humanVsHuman = new String[][]{
+            {"SR", "_________", "P"},
             {"A1", "______X__", "P"}, {"B1", "______XO_", "P"},
             {"C3", "__X___XO_", "P"}, {"B3", "_OX___XO_", "P"},
-            {"B2", "_OX_X_XO_", "X"}, {"RS", "_________", "E"},
+            {"B2", "_OX_X_XO_", "X"}, {"SR", "_________", "E"},
 
+            {"SR", "_________", "P"},
             {"B2", "____X____", "P"}, {"A1", "____X_O__", "P"},
             {"C1", "____X_O_X", "P"}, {"A3", "O___X_O_X", "P"},
             {"A2", "O__XX_O_X", "P"}, {"C2", "O__XXOO_X", "P"},
             {"B3", "OX_XXOO_X", "P"}, {"B1", "OX_XXOOOX", "P"},
             {"C3", "OXXXXOOOX", "D"}, {"B2", "OXXXXOOOX", "D"},
-            {"B2", "OXXXXOOOX", "D"}, {"RS", "_________", "E"},
+            {"B2", "OXXXXOOOX", "D"}, {"SR", "_________", "E"},
 
+            {"SR", "_________", "P"},
             {"A2", "___X_____", "P"}, {"B2", "___XO____", "P"},
             {"A1", "___XO_X__", "P"}, {"A3", "O__XO_X__", "P"},
             {"C1", "O__XO_X_X", "P"}, {"B1", "O__XO_XOX", "P"},
             {"C2", "O__XOXXOX", "P"}, {"B3", "OO_XOXXOX", "O"},
             {"A3", "OO_XOXXOX", "O"}, {"C3", "OO_XOXXOX", "O"},
             {"C3", "OO_XOXXOX", "O"}, {"B2", "OO_XOXXOX", "O"},
-            {"RS", "_________", "E"}, {"RS", "_________", "E"},
+            {"SR", "_________", "E"}, {"SR", "_________", "P"},
+            {"SR", "_________", "E"}, {"SR", "_________", "P"},
 
             {"C1", "________X", "P"}, {"B1", "_______OX", "P"},
             {"B2", "____X__OX", "P"}, {"C2", "____XO_OX", "P"},
             {"A3", "X___XO_OX", "X"}, {"B3", "X___XO_OX", "X"},
             {"C3", "X___XO_OX", "X"}, {"A1", "X___XO_OX", "X"},
-            {"A1", "X___XO_OX", "X"}, {"RS", "_________", "E"},
+            {"A1", "X___XO_OX", "X"}, {"SR", "_________", "E"},
     };
 
-    @DynamicTest(data = "humanVsHuman", feedback = "Incorrect game state")
+    @DynamicTest(data = "humanVsHuman", feedback = "Incorrect game status")
     CheckResult test20(final String cell, final String position, final String state) {
         board.get(cell).click();
         labelStatus.requireText(GAME_STATE.get(state));
@@ -205,6 +254,31 @@ public class TicTacToeTest extends SwingTest {
         cells().forEach(c -> c.requireText(String.valueOf(iter.next())));
         return correct();
     }
+
+
+    @DynamicTest(feedback = "The player buttons should be Human vs Human")
+    CheckResult test30() {
+        buttonPlayer1.requireText("Human");
+        buttonPlayer2.requireText("Human");
+        return correct();
+    }
+
+    @DynamicTest(feedback = "The player buttons should switch Human/Robot")
+    CheckResult test40() {
+        buttonPlayer1.click();
+        buttonPlayer1.requireText("Robot");
+        buttonPlayer1.click();
+        buttonPlayer1.requireText("Human");
+
+        buttonPlayer2.click();
+        buttonPlayer2.requireText("Robot");
+        buttonPlayer2.click();
+        buttonPlayer2.requireText("Human");
+        buttonPlayer2.click();
+        buttonPlayer2.requireText("Robot");
+        return correct();
+    }
+
 
     private static void assertEquals(
             final Object expected,

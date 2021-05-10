@@ -4,40 +4,60 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Arrays;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
-public class TicTacToe extends JFrame  implements ActionListener {
+public class TicTacToe extends JFrame implements ActionListener{
     private GameState gameState;
     private Player currentPlayer;
+    private GameMode player1Mode;
+    private GameMode player2Mode;
     private final GameButton[][] cells;
     private final Logger logger;
-    JLabel gameStateLabel;
+    private final JButton player1ModeBtn;
+    private final JButton resetButton;
+    private final JButton player2ModeBtn;
+    JPanel cellsPanel;
+    private final JLabel gameStateLabel;
+    private Robot robot;
 
     public TicTacToe() {
         currentPlayer = Player.X;
         gameState = GameState.NOT_STARTED;
+        player1Mode = GameMode.HUMAN;
+        player2Mode = GameMode.HUMAN;
+
         logger = Logger.getLogger(getClass().getName());
         logger.setFilter(record -> false);
-        try {
-            Handler handler = new FileHandler("TicTacToe.log");
-            handler.setFormatter(new SimpleFormatter());
-            logger.addHandler(handler);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(320, 380);
         setTitle("Tic Tac Toe");
         setLayout(new BorderLayout());
 
-        JPanel cellsPanel = new JPanel();
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new GridLayout(1, 3));
+        controlPanel.setPreferredSize(new Dimension(300, 30));
 
+        player1ModeBtn = new JButton("Human");
+        player1ModeBtn.setName("ButtonPlayer1");
+        player1ModeBtn.addActionListener(this::switchMode);
+        controlPanel.add(player1ModeBtn);
+
+        resetButton = new JButton("Start");
+        resetButton.setName("ButtonStartReset");
+        resetButton.addActionListener(this::reset);
+        controlPanel.add(resetButton);
+
+        player2ModeBtn = new JButton("Human");
+        player2ModeBtn.setName("ButtonPlayer2");
+        player2ModeBtn.addActionListener(this::switchMode);
+        controlPanel.add(player2ModeBtn);
+        add(controlPanel, BorderLayout.NORTH);
+
+        cellsPanel = new JPanel();
         cellsPanel.setLayout(new GridLayout(3, 3));
         cellsPanel.setPreferredSize(new Dimension(300, 300));
         cells = new GameButton[3][3];
@@ -51,52 +71,117 @@ public class TicTacToe extends JFrame  implements ActionListener {
                 cellsPanel.add(cells[i - 1][j]);
             }
         }
-        add(cellsPanel, BorderLayout.NORTH);
+        setCellsEnabled(false);
+        add(cellsPanel, BorderLayout.CENTER);
 
         JPanel statusBar = new JPanel();
         statusBar.setLayout(new FlowLayout(FlowLayout.LEADING, 10, 15));
         statusBar.setPreferredSize(new Dimension(300, 50));
 
-        gameStateLabel = new JLabel(gameState.toString());
+        gameStateLabel = new JLabel(getGameState().toString());
         gameStateLabel.setName("LabelStatus");
         gameStateLabel.setPreferredSize(new Dimension(170, 20));
         statusBar.add(gameStateLabel);
 
-        JButton resetButton = new JButton("Reset");
-        resetButton.setName("ButtonReset");
-        resetButton.addActionListener(this::reset);
-        statusBar.add(resetButton);
-
         add(statusBar, BorderLayout.SOUTH);
-
+        setLocationRelativeTo(null);
         setVisible(true);
+
+        robot = new RandomRobot(this);
+        robot.start();
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                robot.interrupt();
+            }
+        });
         logger.info("Game started!");
+
     }
 
-    public void setGameState(GameState gameState) {
+    public synchronized GameMode getPlayer1Mode() {
+        return player1Mode;
+    }
+
+    public synchronized GameMode getPlayer2Mode() {
+        return player2Mode;
+    }
+
+    public synchronized Player getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    public synchronized void setCurrentPlayer(Player currentPlayer) {
+        this.currentPlayer = currentPlayer;
+    }
+
+    public void setPlayer1Mode(GameMode player1Mode) {
+        this.player1Mode = player1Mode;
+        player1ModeBtn.setText(player1Mode.toString());
+    }
+
+    public void setPlayer2Mode(GameMode player2Mode) {
+        this.player2Mode = player2Mode;
+        player2ModeBtn.setText(player2Mode.toString());
+    }
+
+    private void switchMode(ActionEvent actionEvent) {
+        if (getGameState() == GameState.IN_PROGRESS) {
+            return;
+        }
+        JButton sender = (JButton) actionEvent.getSource();
+        if (sender.getName().equals("ButtonPlayer1")) {
+            setPlayer1Mode(player1Mode == GameMode.HUMAN ? GameMode.ROBOT : GameMode.HUMAN);
+            return;
+        }
+        if (sender.getName().equals("ButtonPlayer2")) {
+            setPlayer2Mode(player2Mode == GameMode.HUMAN ? GameMode.ROBOT : GameMode.HUMAN);
+        }
+    }
+
+    public synchronized GameState getGameState() {
+        return gameState;
+    }
+
+    public synchronized void setGameState(GameState gameState) {
         this.gameState = gameState;
         gameStateLabel.setText(gameState.toString());
+        if (gameState == GameState.NOT_STARTED) {
+            resetButton.setText("Start");
+            player1ModeBtn.setEnabled(true);
+            player2ModeBtn.setEnabled(true);
+            setCellsEnabled(false);
+        } else {
+            resetButton.setText("Reset");
+            player1ModeBtn.setEnabled(false);
+            player2ModeBtn.setEnabled(false);
+            setCellsEnabled(true);
+        }
         logger.info("Setting state: " + gameState);
     }
 
     void reset(ActionEvent e) {
-        logger.info("Resetting game");
-        setGameState(GameState.NOT_STARTED);
-        currentPlayer = Player.X;
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                cells[i][j].setState(CellState.CLEAR);
+        if (getGameState() == GameState.NOT_STARTED) {
+            setGameState(GameState.IN_PROGRESS);
+        } else {
+            logger.info("Resetting game");
+            setGameState(GameState.NOT_STARTED);
+            setCurrentPlayer(Player.X);
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    cells[i][j].setState(CellState.CLEAR);
+                }
             }
         }
+
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         GameButton sender = (GameButton) e.getSource();
-        if ((gameState.equals(GameState.IN_PROGRESS) || gameState.equals(GameState.NOT_STARTED)) &&
-                sender.getState().equals(CellState.CLEAR)) {
+        if (getGameState().equals(GameState.IN_PROGRESS) && sender.getState().equals(CellState.CLEAR)) {
 
-            sender.setState(currentPlayer.equals(Player.X) ? CellState.FILLED_X : CellState.FILLED_O);
+            sender.setState(getCurrentPlayer().equals(Player.X) ? CellState.FILLED_X : CellState.FILLED_O);
 
             Boolean[] stateColumn = new Boolean[3];
             Arrays.fill(stateColumn, true);
@@ -111,7 +196,7 @@ public class TicTacToe extends JFrame  implements ActionListener {
                     if (cells[row][column].getState().equals(CellState.CLEAR)) {
                         clearCount++;
                     }
-                    boolean equals = cells[row][column].getState().equals(currentPlayer.toCellState());
+                    boolean equals = cells[row][column].getState().equals(getCurrentPlayer().toCellState());
                     stateColumn[row] &= equals;
                     stateRow[column] &= equals;
                     if (row == column) {
@@ -126,14 +211,40 @@ public class TicTacToe extends JFrame  implements ActionListener {
                     descendingDiagonal ||
                     Arrays.stream(stateColumn).anyMatch(b -> b) ||
                     Arrays.stream(stateRow).anyMatch(b -> b)) {
-                setGameState(currentPlayer.equals(Player.X) ? GameState.X_WINS : GameState.O_WINS);
+                setGameState(getCurrentPlayer().equals(Player.X) ? GameState.X_WINS : GameState.O_WINS);
             } else if (clearCount == 0) {
                 setGameState(GameState.DRAW);
             } else {
                 setGameState(GameState.IN_PROGRESS);
             }
 
-            currentPlayer = currentPlayer.next();
+            nextPlayer();
+        }
+    }
+
+    private synchronized void nextPlayer() {
+        currentPlayer = currentPlayer.next();
+    }
+
+    public CellState[][] filedState() {
+        CellState[][] result = new CellState[3][3];
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                result[i][j] = cells[i][j].state;
+            }
+        }
+        return result;
+    }
+
+    public void turn(int row, int column) {
+        actionPerformed(new ActionEvent(cells[row][column], ActionEvent.ACTION_PERFORMED, null));
+    }
+
+    private void setCellsEnabled(boolean enabled) {
+        for (GameButton[] row: cells) {
+            for (GameButton cell: row) {
+                cell.setEnabled(enabled);
+            }
         }
     }
 }
