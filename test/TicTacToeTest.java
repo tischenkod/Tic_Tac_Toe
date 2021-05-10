@@ -1,5 +1,6 @@
 import org.assertj.swing.fixture.JButtonFixture;
 import org.assertj.swing.fixture.JLabelFixture;
+import org.assertj.swing.fixture.JMenuItemFixture;
 import org.hyperskill.hstest.dynamic.DynamicTest;
 import org.hyperskill.hstest.exception.outcomes.WrongAnswer;
 import org.hyperskill.hstest.stage.SwingTest;
@@ -24,11 +25,16 @@ public class TicTacToeTest extends SwingTest {
     private static final String MARK_X = "X";
     private static final String MARK_O = "O";
     private static final Map<String, String> GAME_STATE = Map.of(
-            "E", "Game is not started",
-            "P", "Game in progress",
-            "X", "X wins",
-            "O", "O wins",
-            "D", "Draw");
+            "--", "Game is not started",
+            "H1", "The turn of Human Player (X)",
+            "R1", "The turn of Robot Player (X)",
+            "H2", "The turn of Human Player (O)",
+            "R2", "The turn of Robot Player (O)",
+            "HX", "The Human Player (X) wins",
+            "RX", "The Robot Player (X) wins",
+            "HO", "The Human Player (O) wins",
+            "RO", "The Robot Player (O) wins",
+            "DW", "Draw");
 
     public TicTacToeTest() {
         super(new TicTacToe());
@@ -60,6 +66,18 @@ public class TicTacToeTest extends SwingTest {
     private JButtonFixture buttonPlayer2;
     @SwingComponent
     private JLabelFixture labelStatus;
+    @SwingComponent
+    private JMenuItemFixture menuGame;
+    @SwingComponent
+    private JMenuItemFixture menuHumanHuman;
+    @SwingComponent
+    private JMenuItemFixture menuHumanRobot;
+    @SwingComponent
+    private JMenuItemFixture menuRobotHuman;
+    @SwingComponent
+    private JMenuItemFixture menuRobotRobot;
+    @SwingComponent
+    private JMenuItemFixture menuExit;
 
     private Stream<JButtonFixture> cells() {
         return Stream.of(
@@ -147,7 +165,7 @@ public class TicTacToeTest extends SwingTest {
 
     @DynamicTest(feedback = "The status bar should contain the following text: 'Game is not started' before the game")
     CheckResult test7() {
-        labelStatus.requireText(GAME_STATE.get("E"));
+        labelStatus.requireText(GAME_STATE.get("--"));
         return correct();
     }
 
@@ -157,96 +175,114 @@ public class TicTacToeTest extends SwingTest {
         return correct();
     }
 
-    @DynamicTest(feedback = "The 'ButtonStartReset' component should have the follwoing text: 'Start' after the program starts")
+    @DynamicTest(feedback = "The 'ButtonStartReset' component should have the following text: 'Start' after the program starts")
     CheckResult test9() {
         buttonStartReset.requireText("Start");
         return correct();
     }
 
-    @DynamicTest(feedback = "After a click, 'Start' should be changed to 'Reset'")
+    @DynamicTest(feedback = "Once the game is started, change the 'Start' button to 'Reset'")
     CheckResult test10() {
         buttonStartReset.click();
         buttonStartReset.requireText("Reset");
         return correct();
     }
 
-    @DynamicTest(feedback = "Cells should be enabled after the game started")
+    @DynamicTest(feedback = "Cells should be enabled after the game is started")
     CheckResult test12() {
         cells().forEach(this::requireEnabled);
         return correct();
     }
 
-    @DynamicTest(feedback = "After the game has started, display the 'Game in progress' status")
+    @DynamicTest(feedback = "Once the game is started, the status should indicate the first player turn")
     CheckResult test13() {
-        labelStatus.requireText(GAME_STATE.get("P"));
+        labelStatus.requireText(GAME_STATE.get("H1"));
         return correct();
     }
 
-    @DynamicTest(feedback = "Disable player buttons after the start of the game")
+    @DynamicTest(feedback = "Disable player buttons once the game has started." +
+            " Expected text: 'The turn of Human Player (X)'")
     CheckResult test14() {
         buttonPlayer1.requireDisabled();
         buttonPlayer2.requireDisabled();
         return correct();
     }
 
-    @DynamicTest(feedback = "The first player should be 'X', the second — 'O'")
+    @DynamicTest(feedback = "Display 'X' after the first move" +
+            " and the status should indicate the turn of the second player")
     CheckResult test15() {
         buttonA1.click();
         buttonA1.requireText(MARK_X);
-        buttonA3.click();
-        buttonA3.requireText(MARK_O);
+        labelStatus.requireText(GAME_STATE.get("H2"));
         return correct();
     }
 
-    @DynamicTest(feedback = "Enable player buttons after the game is over or the 'Reset' button is pressed" +
-            "Enable player buttons")
+    @DynamicTest(feedback = "Display 'O' after the second move" +
+            " and the status should indicate the turn of the first player")
     CheckResult test16() {
+        buttonA3.click();
+        buttonA3.requireText(MARK_O);
+        labelStatus.requireText(GAME_STATE.get("H1"));
+        return correct();
+    }
+
+    @DynamicTest(feedback = "The Reset button should finish the game " +
+            "enable player buttons")
+    CheckResult test17() {
         buttonStartReset.click();
         buttonPlayer1.requireEnabled();
         buttonPlayer2.requireEnabled();
         return correct();
     }
 
-    @DynamicTest(feedback = "The 'Reset' button should clear the board" +
-            " and status should indicate 'The game is not started'")
-    CheckResult test18() {
+    @DynamicTest(feedback = "The Reset button should clear the board" +
+            " and the status should indicate 'The game is not started'")
+    CheckResult test19() {
         cells().forEach(cell -> cell.requireText(EMPTY_CELL));
-        labelStatus.requireText(GAME_STATE.get("E"));
+        labelStatus.requireText(GAME_STATE.get("--"));
         return correct();
     }
 
     private final String[][] humanVsHuman = new String[][]{
-            {"SR", "_________", "P"},
-            {"A1", "______X__", "P"}, {"B1", "______XO_", "P"},
-            {"C3", "__X___XO_", "P"}, {"B3", "_OX___XO_", "P"},
-            {"B2", "_OX_X_XO_", "X"}, {"SR", "_________", "E"},
+            {"SR", "_________", "H1"},
+            {"A1", "______X__", "H2"}, {"B1", "______XO_", "H1"},
+            {"C3", "__X___XO_", "H2"}, {"B3", "_OX___XO_", "H1"},
+            {"B2", "_OX_X_XO_", "HX"}, {"SR", "_________", "--"},
 
-            {"SR", "_________", "P"},
-            {"B2", "____X____", "P"}, {"A1", "____X_O__", "P"},
-            {"C1", "____X_O_X", "P"}, {"A3", "O___X_O_X", "P"},
-            {"A2", "O__XX_O_X", "P"}, {"C2", "O__XXOO_X", "P"},
-            {"B3", "OX_XXOO_X", "P"}, {"B1", "OX_XXOOOX", "P"},
-            {"C3", "OXXXXOOOX", "D"}, {"B2", "OXXXXOOOX", "D"},
-            {"B2", "OXXXXOOOX", "D"}, {"SR", "_________", "E"},
+            {"SR", "_________", "H1"},
+            {"B2", "____X____", "H2"}, {"A1", "____X_O__", "H1"},
+            {"C1", "____X_O_X", "H2"}, {"A3", "O___X_O_X", "H1"},
+            {"A2", "O__XX_O_X", "H2"}, {"C2", "O__XXOO_X", "H1"},
+            {"B3", "OX_XXOO_X", "H2"}, {"B1", "OX_XXOOOX", "H1"},
+            {"C3", "OXXXXOOOX", "DW"}, {"B2", "OXXXXOOOX", "DW"},
+            {"B2", "OXXXXOOOX", "DW"}, {"SR", "_________", "--"},
 
-            {"SR", "_________", "P"},
-            {"A2", "___X_____", "P"}, {"B2", "___XO____", "P"},
-            {"A1", "___XO_X__", "P"}, {"A3", "O__XO_X__", "P"},
-            {"C1", "O__XO_X_X", "P"}, {"B1", "O__XO_XOX", "P"},
-            {"C2", "O__XOXXOX", "P"}, {"B3", "OO_XOXXOX", "O"},
-            {"A3", "OO_XOXXOX", "O"}, {"C3", "OO_XOXXOX", "O"},
-            {"C3", "OO_XOXXOX", "O"}, {"B2", "OO_XOXXOX", "O"},
-            {"SR", "_________", "E"}, {"SR", "_________", "P"},
-            {"SR", "_________", "E"}, {"SR", "_________", "P"},
+            {"SR", "_________", "H1"},
+            {"A2", "___X_____", "H2"}, {"B2", "___XO____", "H1"},
+            {"A1", "___XO_X__", "H2"}, {"A3", "O__XO_X__", "H1"},
+            {"C1", "O__XO_X_X", "H2"}, {"B1", "O__XO_XOX", "H1"},
+            {"C2", "O__XOXXOX", "H2"}, {"B3", "OO_XOXXOX", "HO"},
+            {"A3", "OO_XOXXOX", "HO"}, {"C3", "OO_XOXXOX", "HO"},
+            {"C3", "OO_XOXXOX", "HO"}, {"B2", "OO_XOXXOX", "HO"},
+            {"SR", "_________", "--"}, {"SR", "_________", "H1"},
+            {"SR", "_________", "--"}, {"SR", "_________", "H1"},
 
-            {"C1", "________X", "P"}, {"B1", "_______OX", "P"},
-            {"B2", "____X__OX", "P"}, {"C2", "____XO_OX", "P"},
-            {"A3", "X___XO_OX", "X"}, {"B3", "X___XO_OX", "X"},
-            {"C3", "X___XO_OX", "X"}, {"A1", "X___XO_OX", "X"},
-            {"A1", "X___XO_OX", "X"}, {"SR", "_________", "E"},
+            {"C1", "________X", "H2"}, {"B1", "_______OX", "H1"},
+            {"B2", "____X__OX", "H2"}, {"C2", "____XO_OX", "H1"},
+            {"A3", "X___XO_OX", "HX"}, {"B3", "X___XO_OX", "HX"},
+            {"C3", "X___XO_OX", "HX"}, {"A1", "X___XO_OX", "HX"},
+            {"A1", "X___XO_OX", "HX"}, {"SR", "_________", "--"},
+
+            // Test for double click on the same cells
+            {"SR", "_________", "H1"},
+            {"B2", "____X____", "H2"}, {"B2", "____X____", "H2"},
+            {"B2", "____X____", "H2"}, {"C1", "____X___O", "H1"},
+            {"C1", "____X___O", "H1"}, {"C1", "____X___O", "H1"},
+            {"SR", "_________", "--"},
+
     };
 
-    @DynamicTest(data = "humanVsHuman", feedback = "Incorrect game status")
+    @DynamicTest(data = "humanVsHuman", feedback = "Incorrect game state")
     CheckResult test20(final String cell, final String position, final String state) {
         board.get(cell).click();
         labelStatus.requireText(GAME_STATE.get(state));
@@ -279,6 +315,74 @@ public class TicTacToeTest extends SwingTest {
         return correct();
     }
 
+    @DynamicTest(feedback = "After selecting 'Human vs Human', the game should start. " +
+            "Both buttons should be set to 'Human' and disabled. " +
+            "The Start/Reset button should be set to 'Reset' and the cells should be enabled. " +
+            "The status should indicate the first human player turn.")
+    CheckResult test50() {
+        menuHumanHuman.requireEnabled();
+        menuHumanHuman.requireVisible();
+        menuHumanHuman.click();
+        buttonPlayer1.requireText("Human");
+        buttonPlayer2.requireText("Human");
+        buttonPlayer1.requireDisabled();
+        buttonPlayer2.requireDisabled();
+        buttonStartReset.requireText("Reset");
+        cells().forEach(this::requireEnabled);
+        labelStatus.requireText(GAME_STATE.get("H1"));
+        return correct();
+    }
+
+    @DynamicTest(feedback = "After selecting 'Human vs Robot', the game should start. " +
+            "The first player button should be set to 'Human' and disabled. " +
+            "The second player button should be set to 'Robot' and disabled. " +
+            "The Start/Reset button should be set to 'Reset' and the cells should be enabled. " +
+            "The status should indicate the first human player turn.")
+    CheckResult test60() {
+        menuHumanRobot.requireEnabled();
+        menuHumanRobot.requireVisible();
+        menuHumanRobot.click();
+        buttonPlayer1.requireText("Human");
+        buttonPlayer2.requireText("Robot");
+        buttonPlayer1.requireDisabled();
+        buttonPlayer2.requireDisabled();
+        buttonStartReset.requireText("Reset");
+        cells().forEach(this::requireEnabled);
+        labelStatus.requireText(GAME_STATE.get("H1"));
+        return correct();
+    }
+
+    @DynamicTest(feedback = "After selecting 'Human vs Robot', the game should start. " +
+            "The first player button should be set to 'Robot' and disabled. " +
+            "The second player button should be set to 'Human' and disabled. " +
+            "The Start/Reset button should be set to 'Reset' and the cells should be enabled.")
+    CheckResult test70() {
+        menuRobotHuman.requireEnabled();
+        menuRobotHuman.requireVisible();
+        menuRobotHuman.click();
+        buttonPlayer1.requireText("Robot");
+        buttonPlayer2.requireText("Human");
+        buttonPlayer1.requireDisabled();
+        buttonPlayer2.requireDisabled();
+        buttonStartReset.requireText("Reset");
+        cells().forEach(this::requireEnabled);
+        return correct();
+    }
+
+    @DynamicTest(feedback = "After selecting 'Robot vs Robot', the game should start. " +
+            "Both player's buttons should be set to 'Robot' and disabled. " +
+            "The Start/Reset button should be set to 'Reset' and the cells should be enabled.")
+    CheckResult test80() {
+        menuRobotRobot.requireEnabled();
+        menuRobotRobot.requireVisible();
+        menuRobotRobot.click();
+        buttonPlayer1.requireText("Robot");
+        buttonPlayer2.requireText("Robot");
+        buttonPlayer1.requireDisabled();
+        buttonPlayer2.requireDisabled();
+        buttonStartReset.requireText("Reset");
+        return correct();
+    }
 
     private static void assertEquals(
             final Object expected,

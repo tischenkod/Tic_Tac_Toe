@@ -14,8 +14,7 @@ public abstract class Robot extends Thread{
         try {
             while (!isInterrupted()) {
                 if (game.getGameState().equals(GameState.IN_PROGRESS) &&
-                        (game.getCurrentPlayer().equals(Player.X) && game.getPlayer1Mode().equals(GameMode.ROBOT) ||
-                                game.getCurrentPlayer().equals(Player.O) && game.getPlayer2Mode().equals(GameMode.ROBOT))) {
+                        game.getCurrentPlayer().getMode().equals(GameMode.ROBOT)) {
                     makeTurn();
                 }
                 sleep(1000);
